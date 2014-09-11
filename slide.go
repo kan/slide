@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
+	"runtime"
 )
 
 func main() {
@@ -13,7 +15,26 @@ func main() {
 	http.HandleFunc("/static/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, r.URL.Path[1:])
 	})
+	listen := make(chan bool)
+	go func() {
+		<-listen
+		openUrl("http://localhost:17901")
+	}()
+	listen <- true
 	panic(http.ListenAndServe(":17901", nil))
+}
+
+func openUrl(url string) {
+	switch runtime.GOOS {
+	case "linux":
+		exec.Command("xdg-open", url).Start()
+	case "windows":
+		exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		exec.Command("open", url).Start()
+	}
+
+	fmt.Printf("open %s\n", url)
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
